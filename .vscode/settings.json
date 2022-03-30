@@ -1,0 +1,13 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5432,
+            "driver": "PostgreSQL",
+            "name": "api-edt",
+            "connectString": "postgres://api-edt:api_pswd@localhost/debug",
+            "group": "debug"
+        }
+    ]
+}

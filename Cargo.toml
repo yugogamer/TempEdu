@@ -11,6 +11,8 @@ description = "A true edt management systeme"
 refinery = {version = "0.8.4", features = ["tokio-postgres"]}
 tokio-postgres = "0.7.5"
 deadpool-postgres = {version = "0.10.2", features = ["serde"]}
+tokio-pg-mapper = "0.2.0"
+tokio-pg-mapper-derive = "0.2.0"
 
 #Web
 actix-web = "4"
