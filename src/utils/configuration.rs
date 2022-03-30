@@ -1,3 +1,4 @@
+use core::fmt;
 use std::{fs::File, env};
 
 use serde::{Serialize, Deserialize};
@@ -70,10 +71,9 @@ impl Configuration{
     }
 }
 
-/*
+
 impl fmt::Display for Configuration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Listening to : {}:{}\nPort", self.x, self.y)
+        write!(f, "Listening to : {}:{}", self.addresse, self.port)
     }
 }
-*/

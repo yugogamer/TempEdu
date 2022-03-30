@@ -12,10 +12,9 @@ mod entity;
 #[tokio::main]
 async fn main() -> Result<(), tokio_postgres::Error>{
     let config = Configuration::new().await;
-    println!("{:?}", &config);
-
     let connection = connection(&config).await?;
     
+    println!("{}", &config);
     let result = HttpServer::new(move ||{
         App::new()
         .app_data(Data::new(connection.clone()))
