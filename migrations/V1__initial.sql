@@ -1,3 +1,5 @@
+CREATE EXTENSION pgcrypto;
+
 CREATE TABLE IF NOT EXISTS accounts(
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
@@ -41,6 +43,12 @@ CREATE TABLE IF NOT EXISTS creneaux(
     description TEXT,
     CHECK (start_time < end_time)
 );
+
+CREATE TABLE IF NOT EXISTS session(
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id_user INTEGER NOT NULL REFERENCES accounts,
+    expiration_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '31 day',
+)
 
 CREATE TABLE IF NOT EXISTS accountsToGroupes(
     id_account INTEGER REFERENCES accounts,

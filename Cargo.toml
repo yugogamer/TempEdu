@@ -9,7 +9,7 @@ description = "A true edt management systeme"
 [dependencies]
 # Database
 refinery = {version = "0.8.4", features = ["tokio-postgres"]}
-tokio-postgres = "0.7.5"
+tokio-postgres = {version = "0.7.5", features = ["with-chrono-0_4", "with-uuid-0_8"]}
 deadpool-postgres = {version = "0.10.2", features = ["serde"]}
 tokio-pg-mapper = "0.2.0"
 tokio-pg-mapper-derive = "0.2.0"
@@ -22,3 +22,10 @@ serde_yaml = "0.8.23"
 
 #Runtime
 tokio = { version = "1.17.0", features = ["full"] }
+
+#Error handling
+thiserror = "1.0.30"
+
+#Data manipulation
+chrono = {version = "0.4.19", features = ["serde"]}
+uuid = { version = "0.8.2", features = ["serde", "v4"] }

@@ -19,6 +19,7 @@ pub struct User{
 #[pg_mapper(table = "accounts")]
 pub struct UserInsertion{
     pub username: String,
+    pub mdp: String,
     pub first_name: String,
     pub last_name: String,
     pub abreviate_name: String,
