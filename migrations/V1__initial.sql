@@ -3,7 +3,7 @@ CREATE EXTENSION pgcrypto;
 CREATE TABLE IF NOT EXISTS accounts(
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
-    mdp TEXT NOT NULL
+    mdp TEXT NOT NULL,
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     abreviate_name VARCHAR(5) UNIQUE NOT NULL,
