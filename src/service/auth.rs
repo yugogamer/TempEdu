@@ -45,10 +45,15 @@ pub async fn auth_user(conn: &Client, id: &str) -> Result<User, AuthError> {
 
     let timestamp : NaiveDateTime;
     timestamp = row.get("expiration_date");
-    if timestamp.timestamp_nanos() < chrono::Utc::now().timestamp_nanos(){
+
+    let now = chrono::Utc::now();
+
+    if timestamp.timestamp_nanos() < now.timestamp_nanos(){
         return Err(AuthError::SessionExpired);
     }
 
+    let _update = conn.query("UPDATE session SET expiration_date = NOW() + INTERVAL '7 day' WHERE id = $1", &[&id]).await;
+    
     let user = User::from_row(row)?;
 
     Ok(user)
