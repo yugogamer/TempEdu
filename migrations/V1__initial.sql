@@ -1,4 +1,6 @@
 CREATE EXTENSION pgcrypto;
+CREATE EXTENSION "uuid-ossp";
+
 
 CREATE TABLE IF NOT EXISTS accounts(
     id SERIAL PRIMARY KEY,
@@ -7,7 +9,7 @@ CREATE TABLE IF NOT EXISTS accounts(
     first_name TEXT NOT NULL,
     last_name TEXT NOT NULL,
     abreviate_name VARCHAR(5) UNIQUE NOT NULL,
-    mail TEXT UNIQUE NOT NULL,
+    mail TEXT UNIQUE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS groupes(
@@ -47,8 +49,8 @@ CREATE TABLE IF NOT EXISTS creneaux(
 CREATE TABLE IF NOT EXISTS session(
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     id_user INTEGER NOT NULL REFERENCES accounts,
-    expiration_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '7 day',
-)
+    expiration_date TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW() + INTERVAL '7 day'
+);
 
 CREATE TABLE IF NOT EXISTS accountsToGroupes(
     id_account INTEGER REFERENCES accounts,
