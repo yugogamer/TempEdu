@@ -10,6 +10,7 @@ description = "A true edt management systeme"
 # Database
 refinery = {version = "0.8.4", features = ["tokio-postgres"]}
 tokio-postgres = "0.7.5"
+deadpool-postgres = {version = "0.10.2", features = ["serde"]}
 
 #Web
 actix-web = "4"
