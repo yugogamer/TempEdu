@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS weeks(
     year INTEGER NOT NULL,
     start_time TIMESTAMP WITH TIME ZONE NOT NULL,
     end_time TIMESTAMP WITH TIME ZONE NOT NULL,
+    visible BOOLEAN NOT NULL DEFAULT false,
     CHECK (week > 0),
     CHECK (week < 53),
     CHECK (year > 0),
@@ -72,6 +73,6 @@ CREATE TABLE IF NOT EXISTS accountsToCreneaux(
 
 CREATE TABLE IF NOT EXISTS groupesToCreneaux(
     id_creneau INTEGER REFERENCES creneaux,
-    id_account INTEGER REFERENCES accounts,
-    PRIMARY KEY (id_account, id_creneau)
+    id_groupe INTEGER REFERENCES groupes,
+    PRIMARY KEY (id_groupe, id_creneau)
 );
