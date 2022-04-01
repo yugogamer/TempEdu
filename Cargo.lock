@@ -20,6 +20,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-grants-proc-macro"
+version = "2.0.0-beta.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5c28091cf548b5e99e5bc63c0ec67037369eb5cd0a1de9a2d1a56e3135ac292"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "actix-http"
 version = "3.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -179,6 +190,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "actix-web-grants"
+version = "3.0.0-beta.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db9a7e5d0b54df43c34d8c1a2c2745ab95725f7eef924e7e6dba932e9b952798"
+dependencies = [
+ "actix-grants-proc-macro",
+ "actix-web",
 ]
 
 [[package]]
@@ -1306,6 +1327,7 @@ name = "temp_edu"
 version = "0.1.0"
 dependencies = [
  "actix-web",
+ "actix-web-grants",
  "chrono",
  "deadpool-postgres",
  "refinery",

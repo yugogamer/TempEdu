@@ -1,4 +1,6 @@
+use actix_web::{dev::ServiceRequest, web};
 use chrono::NaiveDateTime;
+use deadpool_postgres::{Pool, PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::{Client, types::Timestamp};
 use thiserror::Error;
@@ -19,6 +21,8 @@ pub enum AuthError{
     MapperError(#[from] tokio_pg_mapper::Error),
     #[error("Error api")]
     DbError(#[from] tokio_postgres::Error),
+    #[error("Error api")]
+    PoolError(#[from] PoolError)
 }
 
 
@@ -57,4 +61,32 @@ pub async fn auth_user(conn: &Client, id: &str) -> Result<User, AuthError> {
     let user = User::from_row(row)?;
 
     Ok(user)
+}
+
+pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Error> {
+    let pool = req.app_data::<Pool>().unwrap();
+
+    let conn = pool.get().await;
+    if let Err(err) = conn{
+        return Err(AuthError::PoolError(err).into());
+    }
+    let conn = conn.unwrap();
+
+    let cookies = req.cookie("session");
+    if cookies.is_none() {
+        return Err(AuthError::NoSession.into());
+    }
+    let cookies = cookies.unwrap();
+    
+    let user = auth_user(&conn, &cookies.value()).await?;
+
+
+    Ok(vec![user.username.clone()])
+}
+
+ 
+impl From<AuthError> for actix_web::Error {
+    fn from(err: AuthError) -> Self {
+        actix_web::error::ErrorInternalServerError(err.to_string())
+    }
 }

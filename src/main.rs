@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use actix_web::{HttpServer, App, web::{self, Data}};
+use actix_web_grants::GrantsMiddleware;
 
 use crate::{utils::{configuration::Configuration, database::connection}, controller::base::status};
 
@@ -16,7 +17,10 @@ async fn main() -> Result<(), tokio_postgres::Error>{
     
     println!("{}", &config);
     let result = HttpServer::new(move ||{
+        let auth = GrantsMiddleware::with_extractor(service::auth::extract);
+
         App::new()
+        .wrap(auth)
         .app_data(Data::new(connection.clone()))
         .service(status)
         .service(web::scope("/auth")
