@@ -19,6 +19,9 @@ async fn main() -> Result<(), tokio_postgres::Error>{
         App::new()
         .app_data(Data::new(connection.clone()))
         .service(status)
+        .service(web::scope("/auth")
+            .service(controller::auth::road_login)
+        )
         .service(
             web::scope("/api")
                         .service(web::scope("/v1")
