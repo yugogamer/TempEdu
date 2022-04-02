@@ -1,8 +1,6 @@
-use actix_web::{HttpRequest, FromRequest, web};
-use deadpool_postgres::{Pool, PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::Client;
-use std::{error::Error, future::{Ready, Future}, pin::Pin};
+use std::{error::Error};
 
 use crate::entity::user::{User, UserInsertion};
 
@@ -12,7 +10,7 @@ pub async fn get_user(conn : &Client, id : i32) -> Result<User, Box<dyn Error>>{
 
     let user = User::from_row(row)?;
 
-    return Ok(user);
+    Ok(user)
 }
 
 pub async fn get_user_by_session(conn : &Client, uuid : uuid::Uuid) -> Result<User, Box<dyn Error>>{
@@ -20,7 +18,7 @@ pub async fn get_user_by_session(conn : &Client, uuid : uuid::Uuid) -> Result<Us
 
     let user = User::from_row(row)?;
 
-    return Ok(user);
+    Ok(user)
 }
 
 pub async fn add_user(conn : &Client, user : &UserInsertion) -> Result<User, Box<dyn Error>>{
@@ -31,5 +29,5 @@ pub async fn add_user(conn : &Client, user : &UserInsertion) -> Result<User, Box
         return Ok(user);
     }
 
-    return Err("user not inserted".into());
+    Err("user not inserted".into())
 }

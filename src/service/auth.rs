@@ -1,10 +1,9 @@
 use std::str::FromStr;
 
 use actix_web::{dev::ServiceRequest, web::{self, Data}};
-use chrono::NaiveDateTime;
 use deadpool_postgres::{Pool, PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
-use tokio_postgres::{Client, types::Timestamp};
+use tokio_postgres::{Client};
 use thiserror::Error;
 use uuid::Uuid;
 
@@ -91,10 +90,10 @@ pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Err
     }
     let cookies = cookies.unwrap();
     
-    let user = auth_user(&conn, &cookies.value(), pool.clone()).await?;
+    let user = auth_user(&conn, cookies.value(), pool.clone()).await?;
 
 
-    Ok(vec![user.username.clone()])
+    Ok(vec![user.username])
 }
 
  

@@ -1,6 +1,5 @@
 use std::time::Duration;
-
-use actix_web::{HttpServer, App, web::{self, Data}, middleware};
+use actix_web::{HttpServer, App, web::{self, Data}};
 use actix_web_grants::GrantsMiddleware;
 
 use crate::{utils::{configuration::Configuration, database::connection}, controller::base::status};

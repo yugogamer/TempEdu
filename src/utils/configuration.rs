@@ -1,6 +1,5 @@
 use core::fmt;
 use std::{fs::File, env};
-
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -29,7 +28,7 @@ impl Configuration{
         config.load_file().await;
         config.load_env().await;
         
-        return config;
+        config
     }
     
     async fn load_file(&mut self){
