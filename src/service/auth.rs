@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use actix_web::{dev::ServiceRequest, web};
 use chrono::NaiveDateTime;
 use deadpool_postgres::{Pool, PoolError};
@@ -23,7 +25,9 @@ pub enum AuthError{
     #[error("Error api : database")]
     DbError(#[from] tokio_postgres::Error),
     #[error("Error api : database pool")]
-    PoolError(#[from] PoolError)
+    PoolError(#[from] PoolError),
+    #[error("Fake UUID")]
+    UuidError(#[from] uuid::Error)
 }
 
 
@@ -44,13 +48,14 @@ pub async fn login(conn: &Client, username: &str, password: &str) -> Result<Stri
 }
 
 pub async fn auth_user(conn: &Client, id: &str) -> Result<User, AuthError> {
-    let row = conn.query_one("SELECT A.id A.username, A.first_name, A.last_name, A.abreviate_name, A.mail, S.expiration_date FROM accounts as A, session as S WHERE S.id = $1", &[&id]).await;
+    let uuid = Uuid::from_str(id)?;
+    let row = conn.query_one("SELECT A.id, A.username, A.first_name, A.last_name, A.abreviate_name, A.mail, S.expiration_date FROM accounts as A, session as S WHERE S.id = $1", &[&uuid]).await;
     if let Err(_err) = row {
         return Err(AuthError::NoSession);
     }
     let row = row.unwrap();
 
-    let timestamp : NaiveDateTime;
+    let timestamp : chrono::DateTime<chrono::Utc>;
     timestamp = row.get("expiration_date");
 
     let now = chrono::Utc::now();

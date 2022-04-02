@@ -8,7 +8,6 @@ use crate::{entity::{auth::Login}, service::auth::login};
 #[post("/auth")]
 pub async fn road_login(pool: web::Data<Pool>, login_info: web::Json<Login>) -> Either<impl Responder, HttpResponse> {
     let conn = pool.get().await.unwrap();
-    println!("{:?}", &login_info);
     let auth = login(&conn, &login_info.username, &login_info.password).await;
     match auth {
         Ok(token) => {
