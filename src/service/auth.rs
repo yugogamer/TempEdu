@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use actix_web::{dev::ServiceRequest, web};
+use actix_web::{dev::ServiceRequest, web::{self, Data}};
 use chrono::NaiveDateTime;
 use deadpool_postgres::{Pool, PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
@@ -47,7 +47,7 @@ pub async fn login(conn: &Client, username: &str, password: &str) -> Result<Stri
     Ok(uuid.to_string())
 }
 
-pub async fn auth_user(conn: &Client, id: &str) -> Result<User, AuthError> {
+pub async fn auth_user(conn: &Client, id: &str, pool : Data<Pool>) -> Result<User, AuthError> {
     let uuid = Uuid::from_str(id)?;
     let row = conn.query_one("SELECT A.id, A.username, A.first_name, A.last_name, A.abreviate_name, A.mail, S.expiration_date FROM accounts as A, session as S WHERE S.id = $1", &[&uuid]).await;
     if let Err(_err) = row {
@@ -64,7 +64,12 @@ pub async fn auth_user(conn: &Client, id: &str) -> Result<User, AuthError> {
         return Err(AuthError::SessionExpired);
     }
 
-    let _update = conn.query("UPDATE session SET expiration_date = NOW() + INTERVAL '7 day' WHERE id = $1", &[&id]).await;
+    let id = id.to_string();
+
+    tokio::spawn(async move {
+        let conn = pool.get().await.unwrap();
+        let _update = conn.query("UPDATE session SET expiration_date = NOW() + INTERVAL '7 day' WHERE id = $1", &[&id]).await;
+    });
     
     let user = User::from_row(row)?;
 
@@ -86,7 +91,7 @@ pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Err
     }
     let cookies = cookies.unwrap();
     
-    let user = auth_user(&conn, &cookies.value()).await?;
+    let user = auth_user(&conn, &cookies.value(), pool.clone()).await?;
 
 
     Ok(vec![user.username.clone()])

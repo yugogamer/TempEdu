@@ -30,6 +30,7 @@ async fn main() -> Result<(), tokio_postgres::Error>{
                         .service(web::scope("/v1")
                             .wrap(auth)
                             .service(web::scope("/user")
+                                .service(controller::user::road_get_my_user)
                                 .service(controller::user::road_get_user)
                                 .service(controller::user::road_add_user)
                                 )
