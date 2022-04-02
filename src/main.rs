@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use actix_web::{HttpServer, App, web::{self, Data}};
+use actix_web::{HttpServer, App, web::{self, Data}, middleware};
 use actix_web_grants::GrantsMiddleware;
 
 use crate::{utils::{configuration::Configuration, database::connection}, controller::base::status};
@@ -20,15 +20,15 @@ async fn main() -> Result<(), tokio_postgres::Error>{
         let auth = GrantsMiddleware::with_extractor(service::auth::extract);
 
         App::new()
-        .wrap(auth)
+        // Loading db
         .app_data(Data::new(connection.clone()))
+        // No protection road
         .service(status)
-        .service(web::scope("/auth")
-            .service(controller::auth::road_login)
-        )
+        .service(controller::auth::road_login)
         .service(
             web::scope("/api")
                         .service(web::scope("/v1")
+                            .wrap(auth)
                             .service(web::scope("/user")
                                 .service(controller::user::road_get_user)
                                 .service(controller::user::road_add_user)

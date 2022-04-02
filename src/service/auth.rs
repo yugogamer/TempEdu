@@ -4,6 +4,7 @@ use deadpool_postgres::{Pool, PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::{Client, types::Timestamp};
 use thiserror::Error;
+use uuid::Uuid;
 
 
 
@@ -17,11 +18,11 @@ pub enum AuthError{
     SessionExpired,
     #[error("session not found")]
     NoSession,
-    #[error("Error api")]
+    #[error("Error api : mapper")]
     MapperError(#[from] tokio_pg_mapper::Error),
-    #[error("Error api")]
+    #[error("Error api : database")]
     DbError(#[from] tokio_postgres::Error),
-    #[error("Error api")]
+    #[error("Error api : database pool")]
     PoolError(#[from] PoolError)
 }
 
@@ -34,10 +35,12 @@ pub async fn login(conn: &Client, username: &str, password: &str) -> Result<Stri
 
     let user = User::from_row(row.unwrap())?;
 
-    let _row = conn.query("DELETE FROM session WHERE id_user = $1", &[&user.id]).await?;
-    let row = conn.query_one("INSERT INTO session (id_user) VALUES ($1) return id", &[&user.id]).await?;
+    let _row = conn.query("DELETE FROM session WHERE id_user = $1", &[&user.id]).await;
+    let row = conn.query_one("INSERT INTO session (id_user) VALUES ($1) RETURNING id", &[&user.id]).await?;
 
-    Ok(row.get("id"))
+    let uuid: Uuid = row.get("id");
+
+    Ok(uuid.to_string())
 }
 
 pub async fn auth_user(conn: &Client, id: &str) -> Result<User, AuthError> {
@@ -64,7 +67,7 @@ pub async fn auth_user(conn: &Client, id: &str) -> Result<User, AuthError> {
 }
 
 pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Error> {
-    let pool = req.app_data::<Pool>().unwrap();
+    let pool = req.app_data::<web::Data<Pool>>().unwrap();
 
     let conn = pool.get().await;
     if let Err(err) = conn{
