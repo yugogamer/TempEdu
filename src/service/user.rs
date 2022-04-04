@@ -1,10 +1,9 @@
-use actix_web_grants::permissions;
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::Client;
 use std::{error::Error};
 use thiserror::Error;
 
-use crate::entity::{user::{User, UserInsertion}, role::Permission};
+use crate::entity::{user::{User, UserInsertion}};
 
 #[derive(Debug, Error)]
 pub enum UserError{
