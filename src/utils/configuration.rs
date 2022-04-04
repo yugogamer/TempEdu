@@ -2,11 +2,12 @@ use core::fmt;
 use std::{fs::File, env};
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Configuration{
     pub addresse: String,
     pub port: u16,
     pub pg_string : String,
+    pub jwt_secret : String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -14,24 +15,26 @@ pub struct LoadedConfiguration{
     pub addresse: Option<String>,
     pub port: Option<u16>,
     pub pg_string : Option<String>,
+    pub jwt_secret : Option<String>,
 }
 
 impl Configuration{
     
-    pub async fn new() -> Configuration{
+    pub fn new() -> Configuration{
         let mut config = Configuration{
             addresse: "127.0.0.1".to_owned(),
             port: 8080,
             pg_string: "postgres://api-edt:api_pswd@localhost/debug".to_owned(),
+            jwt_secret: "secret".to_owned(),
         };
         
-        config.load_file().await;
-        config.load_env().await;
+        config.load_file();
+        config.load_env();
         
         config
     }
     
-    async fn load_file(&mut self){
+    fn load_file(&mut self){
         // load from config file
         let file = File::open("settings.yaml");
         if let Ok(file) = file{
@@ -48,11 +51,15 @@ impl Configuration{
                 if let Some(pg_string) = loaded_config.pg_string{
                     self.pg_string = pg_string;
                 }
+
+                if let Some(jwt_secret) = loaded_config.jwt_secret{
+                    self.jwt_secret = jwt_secret;
+                }
             }
         }
     }
 
-    async fn load_env(&mut self){
+    fn load_env(&mut self){
         //loading from env variable
         if let Ok(addresse) = env::var("ADDRESSE"){
             self.addresse = addresse;
@@ -66,6 +73,10 @@ impl Configuration{
 
         if let Ok(pg_string) = env::var("PG_STRING"){
             self.pg_string = pg_string;
+        }
+
+        if let Ok(jwt_secret) = env::var("JWT_SECRET"){
+            self.jwt_secret = jwt_secret;
         }
     }
 }

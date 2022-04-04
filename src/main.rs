@@ -11,16 +11,17 @@ mod entity;
 
 #[tokio::main]
 async fn main() -> Result<(), tokio_postgres::Error>{
-    let config = Configuration::new().await;
+    let config = Configuration::new();
     let connection = connection(&config).await?;
     
-    println!("{}", &config);
     let result = HttpServer::new(move ||{
         let auth = GrantsMiddleware::with_extractor(service::auth::extract);
+        let config = Configuration::new();
 
         App::new()
         // Loading db
         .app_data(Data::new(connection.clone()))
+        .app_data(config)
         // No protection road
         .service(status)
         .service(controller::auth::road_login)
@@ -37,7 +38,7 @@ async fn main() -> Result<(), tokio_postgres::Error>{
         )
     })
     .keep_alive(Duration::from_secs(120))
-    .bind((config.addresse.as_str(), config.port)).expect("err : binding already use or not found")
+    .bind((config.addresse, config.port)).expect("err : binding already use or not found")
     .run().await;
 
     if let Err(err) = result {
