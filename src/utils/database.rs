@@ -3,6 +3,8 @@ use std::str::FromStr;
 use tokio_postgres::{NoTls, Client};
 use deadpool_postgres::{Manager, ManagerConfig, Pool, RecyclingMethod};
 
+use crate::{service::{user::{get_user, add_user}, role::set_role}, entity::user::UserInsertion};
+
 use super::configuration::Configuration;
 
 
@@ -21,6 +23,27 @@ pub async fn connection(config : &Configuration) -> Result<Pool, tokio_postgres:
 
     if let Err(err) = make_migration(&mut client).await{
         eprintln!("migration error : {}", err);
+    }
+
+    let conn = pool.get().await.unwrap();
+
+    let user = get_user(&conn, 1).await;
+    match user {
+        Ok(_user) => {
+            println!("admin already exist");
+        },
+        Err(_err) => {
+            println!("Creating admin");
+            let user = add_user(&conn, &UserInsertion { 
+                username: "admin".to_string(), 
+                mdp: "admin".to_string(), 
+                first_name: "admin".to_string(), 
+                last_name: "admin".to_string(), 
+                abreviate_name: "admin".to_string(), 
+                mail: "adming@exemple.com".to_string() }).await;
+            set_role(&conn, user.unwrap().id, 1).await;
+            println!("admin created");
+        }
     }
 
     Ok(pool)
