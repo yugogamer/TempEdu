@@ -1,14 +1,15 @@
-use std::str::FromStr;
-use actix_web::{dev::ServiceRequest, web::{self, Data}};
-use deadpool_postgres::{Pool, PoolError};
+use actix_web::{dev::ServiceRequest};
+use deadpool_postgres::{PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::{Client};
 use thiserror::Error;
-use uuid::Uuid;
+use hmac::{Hmac, Mac, digest::InvalidLength};
+use jwt::{AlgorithmType, Header, SignWithKey, Token, VerifyWithKey};
+use sha2::Sha384;
 
 
 
-use crate::entity::user::User;
+use crate::entity::{user::User, auth::UserInformation};
 
 use super::user::{get_permission_list, UserError};
 
@@ -30,6 +31,10 @@ pub enum AuthError{
     UuidError(#[from] uuid::Error),
     #[error("Error api : user not found")]
     UserNotFound(#[from] UserError),
+    #[error("Error api : KeyError")]
+    KeyError(#[from] InvalidLength),
+    #[error("Error api : JWTError")]
+    JWTError(#[from] jwt::Error),
 }
 
 
@@ -39,71 +44,39 @@ pub async fn login(conn: &Client, username: &str, password: &str) -> Result<Stri
         return Err(AuthError::UserNotFoundOrPasswordNotFound);
     }
 
+    let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret")?;
+    let header = Header {
+        algorithm: AlgorithmType::Hs384,
+        ..Default::default()
+    };
+
     let user = User::from_row(row.unwrap())?;
+    let permission_list = get_permission_list(conn, user.id).await?;
+    let user = UserInformation::new(user, permission_list);
 
-    let _row = conn.query("DELETE FROM session WHERE id_user = $1", &[&user.id]).await;
-    let row = conn.query_one("INSERT INTO session (id_user) VALUES ($1) RETURNING id", &[&user.id]).await?;
+    let token = Token::new(header, user).sign_with_key(&key)?;
 
-    let uuid: Uuid = row.get("id");
-
-    Ok(uuid.to_string())
+    Ok(token.as_str().to_string())
 }
 
-pub async fn auth_user(conn: &Client, id: &str, pool : Data<Pool>) -> Result<User, AuthError> {
-    let uuid = Uuid::from_str(id)?;
-    let row = conn.query_one("SELECT A.id, A.username, A.first_name, A.last_name, A.abreviate_name, A.mail, S.expiration_date FROM accounts as A, session as S WHERE S.id = $1 AND a.id = S.id_user", &[&uuid]).await;
-    if let Err(_err) = row {
-        eprintln!("{:?}", _err);
-        return Err(AuthError::NoSession);
-    }
-    let row = row.unwrap();
-
-    let timestamp : chrono::DateTime<chrono::Utc>;
-    timestamp = row.get("expiration_date");
-
-    let now = chrono::Utc::now();
-
-    if timestamp.timestamp_nanos() < now.timestamp_nanos(){
-        return Err(AuthError::SessionExpired);
-    }
-
-    let id = id.to_string();
-
-    tokio::spawn(async move {
-        let conn = pool.get().await.unwrap();
-        let _update = conn.query("UPDATE session SET expiration_date = NOW() + INTERVAL '7 day' WHERE id = $1", &[&id]).await;
-    });
-    
-    let user = User::from_row(row)?;
+pub fn auth_user(jwt: &str) -> Result<UserInformation, AuthError> {
+    let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret")?;
+    let token : Token<Header, UserInformation, _> = jwt.verify_with_key(&key)?;
+    let user = token.claims().clone();
 
     Ok(user)
 }
 
 pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Error> {
-    let pool = req.app_data::<web::Data<Pool>>().unwrap();
-
-    let conn = pool.get().await;
-    if let Err(err) = conn{
-        return Err(AuthError::PoolError(err).into());
-    }
-    let conn = conn.unwrap();
-
     let cookies = req.cookie("session");
     if cookies.is_none() {
         return Err(AuthError::NoSession.into());
     }
     let cookies = cookies.unwrap();
     
-    let user = auth_user(&conn, cookies.value(), pool.clone()).await?;
+    let user = auth_user( cookies.value())?;
 
-    let permision = get_permission_list(&conn, user.id).await;
-
-    match permision {
-        Ok(permision) => Ok(permision),
-        Err(err) => {
-            return Err(err.into());
-        }
-    }
+    Ok(user.permission_list)
 }
 
  

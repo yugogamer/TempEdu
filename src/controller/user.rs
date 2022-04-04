@@ -1,9 +1,7 @@
-use std::str::FromStr;
-
 use actix_web::{get, web, Responder, Result, post, HttpResponse, Either, HttpRequest};
 use actix_web_grants::proc_macro::has_permissions;
 use deadpool_postgres::{Pool};
-use crate::{service::user::{get_user, add_user, get_user_by_session}, entity::user::UserInsertion};
+use crate::{service::{user::{get_user, add_user}, auth::auth_user}, entity::user::UserInsertion};
 
 
 
@@ -17,13 +15,13 @@ pub async fn road_get_user(pool: web::Data<Pool>, id: web::Path<i32>) -> Result<
     Ok(web::Json(user))
 }
 
-#[get("/")]
-pub async fn road_get_my_user(pool: web::Data<Pool>, req: HttpRequest) -> Result<impl Responder> {
-    let conn = pool.get().await.unwrap();
+#[get("")]
+pub async fn road_get_my_user(req: HttpRequest) -> Result<impl Responder> {
+    let cookies = req.cookie("session");
+    let cookies = cookies.unwrap();
 
-    let uuid = uuid::Uuid::from_str(req.cookie("session").unwrap().value()).unwrap();
+    let user = auth_user(cookies.value())?;
 
-    let user = get_user_by_session(&conn, uuid).await?;
     Ok(web::Json(user))
 }
 
