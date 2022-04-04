@@ -18,13 +18,13 @@ CREATE TABLE IF NOT EXISTS groupes(
     protected BOOLEAN NOT NULL DEFAULT true
 );
 
-CREATE TABLE IF NOT EXISTS role(
+CREATE TABLE IF NOT EXISTS roles(
     id SERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     description TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS permission (
+CREATE TABLE IF NOT EXISTS permissions (
     id SERIAL PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     description TEXT NOT NULL
@@ -91,36 +91,36 @@ CREATE TABLE IF NOT EXISTS groupesToCreneaux(
 );
 
 CREATE TABLE IF NOT EXISTS roleToUsers(
-    id_role INTEGER REFERENCES role,
+    id_role INTEGER REFERENCES roles,
     id_user INTEGER REFERENCES accounts,
     PRIMARY KEY (id_role, id_user)
 );
 
-CREATE TABLE IF NOT EXISTS roleToPermission(
-    id_role INTEGER REFERENCES role,
-    id_permission INTEGER REFERENCES permission,
+CREATE TABLE IF NOT EXISTS roleToPermissions(
+    id_role INTEGER REFERENCES roles,
+    id_permission INTEGER REFERENCES permissions,
     PRIMARY KEY (id_role, id_permission)
 );
 
-INSERT INTO role (id, name, description) VALUES (1, 'admin', 'Administrateur');
-INSERT INTO role (id ,name, description) VALUES (2, 'editor', 'Editor');
-INSERT INTO role (id, name, description) VALUES (3, 'user', 'User');
+INSERT INTO roles (id, name, description) VALUES (1, 'admin', 'Administrateur');
+INSERT INTO roles (id ,name, description) VALUES (2, 'editor', 'Editor');
+INSERT INTO roles (id, name, description) VALUES (3, 'user', 'User');
 
-INSERT INTO permission (name, description) VALUES ('edit_edt', 'Create and edit a crenaux');
-INSERT INTO permission (name, description) VALUES ('create_account', 'Create an account');
-INSERT INTO permission (name, description) VALUES ('see_all_account', 'view all account');
-INSERT INTO permission (name, description) VALUES ('see_protected_groupe', 'See all groupes');
-INSERT INTO permission (name, description) VALUES ('see_invisible_week', 'See all week');
-INSERT INTO permission (name, description) VALUES ('edit_role', 'Edit a role');
+INSERT INTO permissions (name, description) VALUES ('edit_edt', 'Create and edit a crenaux');
+INSERT INTO permissions (name, description) VALUES ('create_account', 'Create an account');
+INSERT INTO permissions (name, description) VALUES ('see_all_account', 'view all account');
+INSERT INTO permissions (name, description) VALUES ('see_protected_groupe', 'See all groupes');
+INSERT INTO permissions (name, description) VALUES ('see_invisible_week', 'See all week');
+INSERT INTO permissions (name, description) VALUES ('edit_role', 'Edit a role');
 
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (1, 1);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (1, 2);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (1, 3);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (1, 4);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (1, 5);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (1, 6);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (1, 1);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (1, 2);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (1, 3);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (1, 4);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (1, 5);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (1, 6);
 
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (2, 1);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (2, 3);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (2, 4);
-INSERT INTO roleToPermission (id_role, id_permission) VALUES (2, 5);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (2, 1);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (2, 3);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (2, 4);
+INSERT INTO roleToPermissions (id_role, id_permission) VALUES (2, 5);

@@ -1,8 +1,20 @@
+use actix_web_grants::permissions;
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::Client;
 use std::{error::Error};
+use thiserror::Error;
 
-use crate::entity::user::{User, UserInsertion};
+use crate::entity::{user::{User, UserInsertion}, role::Permission};
+
+#[derive(Debug, Error)]
+pub enum UserError{
+    #[error("Error api : mapper")]
+    MapperError(#[from] tokio_pg_mapper::Error),
+    #[error("Error api : database : `{0}`")]
+    DbError(#[from] tokio_postgres::Error),
+    #[error("Fake UUID")]
+    UuidError(#[from] uuid::Error)
+}
 
 
 pub async fn get_user(conn : &Client, id : i32) -> Result<User, Box<dyn Error>>{
@@ -30,4 +42,21 @@ pub async fn add_user(conn : &Client, user : &UserInsertion) -> Result<User, Box
     }
 
     Err("user not inserted".into())
+}
+
+pub async fn get_permission_list(conn : &Client , id_user : i32) -> Result<Vec<String>,UserError>{
+    let row = conn.query("
+    SELECT P.name FROM roleToPermissions RP,  permissions P, roletousers RU, roles R 
+    WHERE RU.id_user = $1 AND 
+    RU.id_role = R.id AND 
+    RP.id_role = RU.id_role AND
+    P.id = RP.id_permission;", &[&id_user]).await?;
+
+    let mut permissions_list : Vec<String> = Vec::new();
+
+    for row in row {
+        permissions_list.push(row.try_get("name")?);
+    }
+
+    Ok(permissions_list)
 }

@@ -10,6 +10,8 @@ use uuid::Uuid;
 
 use crate::entity::user::User;
 
+use super::user::{get_permission_list, UserError};
+
 #[derive(Debug, Error)]
 pub enum AuthError{
     #[error("username or password inccorect")]
@@ -20,12 +22,14 @@ pub enum AuthError{
     NoSession,
     #[error("Error api : mapper")]
     MapperError(#[from] tokio_pg_mapper::Error),
-    #[error("Error api : database")]
+    #[error("Error api : database : `{0}`")]
     DbError(#[from] tokio_postgres::Error),
     #[error("Error api : database pool")]
     PoolError(#[from] PoolError),
     #[error("Fake UUID")]
-    UuidError(#[from] uuid::Error)
+    UuidError(#[from] uuid::Error),
+    #[error("Error api : user not found")]
+    UserNotFound(#[from] UserError),
 }
 
 
@@ -91,13 +95,25 @@ pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Err
     
     let user = auth_user(&conn, cookies.value(), pool.clone()).await?;
 
+    let permision = get_permission_list(&conn, user.id).await;
 
-    Ok(vec![user.username])
+    match permision {
+        Ok(permision) => Ok(permision),
+        Err(err) => {
+            return Err(err.into());
+        }
+    }
 }
 
  
 impl From<AuthError> for actix_web::Error {
     fn from(err: AuthError) -> Self {
+        actix_web::error::ErrorInternalServerError(err.to_string())
+    }
+}
+
+impl From<UserError> for actix_web::Error {
+    fn from(err: UserError) -> Self {
         actix_web::error::ErrorInternalServerError(err.to_string())
     }
 }
