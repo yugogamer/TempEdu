@@ -1,5 +1,5 @@
-use std::time::Duration;
-use actix_web::{HttpServer, App, web::{self, Data}};
+use std::{time::Duration};
+use actix_web::{HttpServer, App, web::{self, Data}, middleware::Logger};
 use actix_web_grants::GrantsMiddleware;
 
 use crate::{utils::{configuration::Configuration, database::connection}, controller::base::status};
@@ -13,12 +13,14 @@ mod entity;
 async fn main() -> Result<(), tokio_postgres::Error>{
     let config = Configuration::new();
     let connection = connection(&config).await?;
-    
+    env_logger::init_from_env(env_logger::Env::new().default_filter_or("error"));
+
     let result = HttpServer::new(move ||{
         let auth = GrantsMiddleware::with_extractor(service::auth::extract);
-        let config = Configuration::new();
+        let config = Data::new(Configuration::new());
 
         App::new()
+        .wrap(Logger::default())
         // Loading db
         .app_data(Data::new(connection.clone()))
         .app_data(config)

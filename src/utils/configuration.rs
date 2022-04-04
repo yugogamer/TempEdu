@@ -1,13 +1,16 @@
 use core::fmt;
 use std::{fs::File, env};
+use hmac::Hmac;
 use serde::{Serialize, Deserialize};
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
+use sha2::Sha384;
+use hmac::digest::KeyInit;
+#[derive(Debug, Clone)]
 pub struct Configuration{
     pub addresse: String,
     pub port: u16,
     pub pg_string : String,
     pub jwt_secret : String,
+    pub key : Hmac<Sha384>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,11 +29,14 @@ impl Configuration{
             port: 8080,
             pg_string: "postgres://api-edt:api_pswd@localhost/debug".to_owned(),
             jwt_secret: "secret".to_owned(),
+            key: Hmac::new_from_slice(b"secret").unwrap(),
         };
         
         config.load_file();
         config.load_env();
         
+        config.key = Hmac::new_from_slice(config.jwt_secret.as_bytes()).unwrap();
+
         config
     }
     

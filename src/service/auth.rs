@@ -1,4 +1,4 @@
-use actix_web::{dev::ServiceRequest};
+use actix_web::{dev::ServiceRequest, web::Data};
 use deadpool_postgres::{PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::{Client};
@@ -9,7 +9,7 @@ use sha2::Sha384;
 
 
 
-use crate::entity::{user::User, auth::UserInformation};
+use crate::{entity::{user::User, auth::UserInformation}, utils::configuration::Configuration};
 
 use super::user::{get_permission_list, UserError};
 
@@ -38,13 +38,12 @@ pub enum AuthError{
 }
 
 
-pub async fn login(conn: &Client, username: &str, password: &str) -> Result<String, AuthError> {
+pub async fn login(conn: &Client, username: &str, password: &str, key : &Hmac<Sha384> ) -> Result<String, AuthError> {
     let row = conn.query_one("SELECT * FROM accounts WHERE username = $1 AND password = crypt($2, password)", &[&username, &password]).await;
     if let Err(_err) = row {
         return Err(AuthError::UserNotFoundOrPasswordNotFound);
     }
 
-    let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret")?;
     let header = Header {
         algorithm: AlgorithmType::Hs384,
         ..Default::default()
@@ -54,27 +53,27 @@ pub async fn login(conn: &Client, username: &str, password: &str) -> Result<Stri
     let permission_list = get_permission_list(conn, user.id).await?;
     let user = UserInformation::new(user, permission_list);
 
-    let token = Token::new(header, user).sign_with_key(&key)?;
+    let token = Token::new(header, user).sign_with_key(key)?;
 
     Ok(token.as_str().to_string())
 }
 
-pub fn auth_user(jwt: &str) -> Result<UserInformation, AuthError> {
-    let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret")?;
-    let token : Token<Header, UserInformation, _> = jwt.verify_with_key(&key)?;
+pub fn auth_user(jwt: &str, key : &Hmac<Sha384>) -> Result<UserInformation, AuthError> {
+    let token : Token<Header, UserInformation, _> = jwt.verify_with_key(key)?;
     let user = token.claims().clone();
 
     Ok(user)
 }
 
 pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Error> {
+    let configuration = req.app_data::<Data<Configuration>>().unwrap();
     let cookies = req.cookie("session");
     if cookies.is_none() {
         return Err(AuthError::NoSession.into());
     }
     let cookies = cookies.unwrap();
     
-    let user = auth_user( cookies.value())?;
+    let user = auth_user( cookies.value(), &configuration.key)?;
 
     Ok(user.permission_list)
 }

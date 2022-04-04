@@ -1,7 +1,7 @@
 use actix_web::{get, web, Responder, Result, post, HttpResponse, Either, HttpRequest};
 use actix_web_grants::proc_macro::has_permissions;
 use deadpool_postgres::{Pool};
-use crate::{service::{user::{get_user, add_user}, auth::auth_user}, entity::user::UserInsertion};
+use crate::{service::{user::{get_user, add_user}, auth::auth_user}, entity::user::UserInsertion, utils::configuration::Configuration};
 
 
 
@@ -16,11 +16,11 @@ pub async fn road_get_user(pool: web::Data<Pool>, id: web::Path<i32>) -> Result<
 }
 
 #[get("")]
-pub async fn road_get_my_user(req: HttpRequest) -> Result<impl Responder> {
+pub async fn road_get_my_user(configuration : web::Data<Configuration> , req: HttpRequest) -> Result<impl Responder> {
     let cookies = req.cookie("session");
     let cookies = cookies.unwrap();
 
-    let user = auth_user(cookies.value())?;
+    let user = auth_user(cookies.value(), &configuration.key)?;
 
     Ok(web::Json(user))
 }
