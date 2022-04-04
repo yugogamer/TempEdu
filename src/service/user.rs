@@ -25,7 +25,7 @@ pub async fn get_user(conn : &Client, id : i32) -> Result<User, Box<dyn Error>>{
 }
 
 pub async fn get_user_by_session(conn : &Client, uuid : uuid::Uuid) -> Result<User, Box<dyn Error>>{
-    let row = conn.query_one("SELECT A.id, A.username, A.first_name, A.last_name, A.abreviate_name, A.mail, S.expiration_date FROM accounts as A, session as S WHERE S.id = $1", &[&uuid]).await?;
+    let row = conn.query_one("SELECT A.id, A.username, A.first_name, A.last_name, A.abreviate_name, A.mail FROM accounts as A, session as S WHERE S.id = $1 AND a.id = S.id_user ", &[&uuid]).await?;
 
     let user = User::from_row(row)?;
 

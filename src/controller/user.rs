@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use actix_web::{get, web, Responder, Result, post, HttpResponse, Either, HttpRequest};
+use actix_web_grants::proc_macro::has_permissions;
 use deadpool_postgres::{Pool};
 use crate::{service::user::{get_user, add_user, get_user_by_session}, entity::user::UserInsertion};
 
@@ -9,6 +10,7 @@ use crate::{service::user::{get_user, add_user, get_user_by_session}, entity::us
 
 
 #[get("/{id}")]
+#[has_permissions("see_all_account")]
 pub async fn road_get_user(pool: web::Data<Pool>, id: web::Path<i32>) -> Result<impl Responder> {
     let conn = pool.get().await.unwrap();
     let user = get_user(&conn, id.into_inner()).await?;
@@ -26,6 +28,7 @@ pub async fn road_get_my_user(pool: web::Data<Pool>, req: HttpRequest) -> Result
 }
 
 #[post("")]
+#[has_permissions("create_account")]
 pub async fn road_add_user(pool: web::Data<Pool>, user: web::Json<UserInsertion>) -> Either<impl Responder, HttpResponse> {
     let conn = pool.get().await.unwrap();
     let user = add_user(&conn, &*user).await;

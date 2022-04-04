@@ -51,8 +51,9 @@ pub async fn login(conn: &Client, username: &str, password: &str) -> Result<Stri
 
 pub async fn auth_user(conn: &Client, id: &str, pool : Data<Pool>) -> Result<User, AuthError> {
     let uuid = Uuid::from_str(id)?;
-    let row = conn.query_one("SELECT A.id, A.username, A.first_name, A.last_name, A.abreviate_name, A.mail, S.expiration_date FROM accounts as A, session as S WHERE S.id = $1", &[&uuid]).await;
+    let row = conn.query_one("SELECT A.id, A.username, A.first_name, A.last_name, A.abreviate_name, A.mail, S.expiration_date FROM accounts as A, session as S WHERE S.id = $1 AND a.id = S.id_user", &[&uuid]).await;
     if let Err(_err) = row {
+        eprintln!("{:?}", _err);
         return Err(AuthError::NoSession);
     }
     let row = row.unwrap();
