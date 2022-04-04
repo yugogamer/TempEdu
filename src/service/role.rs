@@ -1,13 +1,4 @@
-use std::str::FromStr;
-
-use actix_web::{dev::ServiceRequest, web::{self, Data}};
-use deadpool_postgres::{Pool, PoolError};
-use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::{Client};
-use thiserror::Error;
-use uuid::Uuid;
-
-
 
 pub async fn set_role(conn: &Client, id_user: i32, id_role: i32) -> bool {
     let row = conn.query(

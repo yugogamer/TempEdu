@@ -1,5 +1,4 @@
 use std::str::FromStr;
-
 use actix_web::{dev::ServiceRequest, web::{self, Data}};
 use deadpool_postgres::{Pool, PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
