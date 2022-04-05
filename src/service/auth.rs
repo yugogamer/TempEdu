@@ -66,14 +66,12 @@ pub fn auth_user(jwt: &str, key : &Hmac<Sha384>) -> Result<UserInformation, Auth
 pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Error> {
     let configuration = req.app_data::<Data<Configuration>>().unwrap();
     let cookies = req.cookie("session");
-    if cookies.is_none() {
-        return Err(AuthError::NoSession.into());
+    if let Some(cookies) = cookies {
+        let user = auth_user( cookies.value(), &configuration.key)?;
+        return Ok(user.permission_list);
     }
-    let cookies = cookies.unwrap();
-    
-    let user = auth_user( cookies.value(), &configuration.key)?;
-
-    Ok(user.permission_list)
+    eprintln!("{:?}", req.cookies());
+    Err(AuthError::NoSession.into())
 }
 
  impl From<UserError> for actix_web::Error {
@@ -86,7 +84,7 @@ impl error::ResponseError for AuthError {
     fn error_response(&self) -> actix_web::HttpResponse {
         match self {
             AuthError::UserNotFoundOrPasswordNotFound => actix_web::HttpResponse::Unauthorized().body("username or password inccorect"),
-            AuthError::NoSession => actix_web::HttpResponse::Unauthorized().body("session not found"),
+            AuthError::NoSession => actix_web::HttpResponse::Unauthorized().body("session not found, please log in"),
             AuthError::MapperError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : mapper"),
             AuthError::DbError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : database"),
             AuthError::PoolError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : database pool"),
