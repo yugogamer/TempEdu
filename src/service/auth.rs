@@ -1,9 +1,9 @@
-use actix_web::{dev::ServiceRequest, web::Data};
+use actix_web::{dev::ServiceRequest, web::Data, error};
 use deadpool_postgres::{PoolError};
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::{Client};
 use thiserror::Error;
-use hmac::{Hmac, Mac, digest::InvalidLength};
+use hmac::{Hmac, digest::InvalidLength};
 use jwt::{AlgorithmType, Header, SignWithKey, Token, VerifyWithKey};
 use sha2::Sha384;
 
@@ -17,8 +17,6 @@ use super::user::{get_permission_list, UserError};
 pub enum AuthError{
     #[error("username or password inccorect")]
     UserNotFoundOrPasswordNotFound,
-    #[error("session expired")]
-    SessionExpired,
     #[error("session not found")]
     NoSession,
     #[error("Error api : mapper")]
@@ -78,15 +76,24 @@ pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Err
     Ok(user.permission_list)
 }
 
- 
-impl From<AuthError> for actix_web::Error {
-    fn from(err: AuthError) -> Self {
+ impl From<UserError> for actix_web::Error {
+    fn from(err: UserError) -> Self {
         actix_web::error::ErrorInternalServerError(err.to_string())
     }
 }
 
-impl From<UserError> for actix_web::Error {
-    fn from(err: UserError) -> Self {
-        actix_web::error::ErrorInternalServerError(err.to_string())
+impl error::ResponseError for AuthError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        match self {
+            AuthError::UserNotFoundOrPasswordNotFound => actix_web::HttpResponse::Unauthorized().body("username or password inccorect"),
+            AuthError::NoSession => actix_web::HttpResponse::Unauthorized().body("session not found"),
+            AuthError::MapperError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : mapper"),
+            AuthError::DbError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : database"),
+            AuthError::PoolError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : database pool"),
+            AuthError::UuidError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : user not found"),
+            AuthError::UserNotFound(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : user not found"),
+            AuthError::KeyError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : KeyError"),
+            AuthError::JWTError(_err) => actix_web::HttpResponse::InternalServerError().body("Error api : JWTError"),
+        }
     }
 }
