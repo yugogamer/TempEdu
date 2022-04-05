@@ -1,8 +1,8 @@
-use actix_web::{get, web, HttpRequest, Responder};
+use actix_web::{get, web, HttpRequest, Responder, post, HttpResponse};
 use actix_web_grants::proc_macro::has_any_permission;
 use deadpool_postgres::Pool;
 
-use crate::{utils::configuration::Configuration, service::{auth::auth_user, crenaux::{get_creneaux_of_user_with_groupe, get_creneaux_of_groupe}}};
+use crate::{utils::configuration::Configuration, service::{auth::auth_user, crenaux::{get_creneaux_of_user_with_groupe, get_creneaux_of_groupe}, self}, entity::crenaux::Crenau};
 
 
 
@@ -38,4 +38,32 @@ pub async fn get_groupe_edt(pool : web::Data<Pool>, id_week: web::Path<i32>, id_
     let edt = get_creneaux_of_groupe(&conn, *id_groupe, *id_week).await?;
 
     Ok(web::Json(edt))
+}
+
+
+#[post("/g/{id_groupe}")]
+#[has_any_permission("edit_edt")]
+pub async fn create_creneaux_groupe(pool : web::Data<Pool>, id_groupe: web::Path<i32>, crenaux : web::Json<Crenau>) -> Result<impl Responder, actix_web::Error> {
+    let conn = pool.get().await.unwrap();
+    let crenau = crenaux.into_inner();
+
+    service::crenaux::create_creneaux_groupe(&conn,crenau , *id_groupe).await?;
+
+    Ok(HttpResponse::Accepted())
+}
+
+#[post("")]
+#[has_any_permission("edit_edt")]
+pub async fn create_creneaux_me(pool : web::Data<Pool>, crenaux : web::Json<Crenau>, configuration : web::Data<Configuration> , req: HttpRequest) -> Result<impl Responder, actix_web::Error> {
+    let conn = pool.get().await.unwrap();
+    let crenau = crenaux.into_inner();
+
+    let cookies = req.cookie("session");
+    let cookies = cookies.unwrap();
+
+    let user = auth_user(cookies.value(), &configuration.key)?;
+
+    service::crenaux::create_creneaux_user(&conn,crenau , user.id).await?;
+
+    Ok(HttpResponse::Accepted())
 }

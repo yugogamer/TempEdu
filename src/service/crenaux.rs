@@ -72,7 +72,7 @@ pub async fn get_creneaux_of_user_with_groupe(conn: &Client , id : i32, week : i
     Ok(crenaux_list)
 }
 
-pub async fn create_creneaux(conn: &Client , creneau : Crenau) -> Result<(), CrenauxError>{
+pub async fn create_creneaux_groupe(conn: &Client , creneau : Crenau, id_groupe : i32) -> Result<(), CrenauxError>{
     let row = conn.query("
     INSERT INTO creneaux (
         id_week,
@@ -89,13 +89,50 @@ pub async fn create_creneaux(conn: &Client , creneau : Crenau) -> Result<(), Cre
         $4,
         $5,
         $6
-      )", &[&creneau.id_week, &creneau.id_matiere, &creneau.start_time, &creneau.end_time, &creneau.name, &creneau.description]).await;
+      ) RETURNING id", &[&creneau.id_week, &creneau.id_matiere, &creneau.start_time, &creneau.end_time, &creneau.name, &creneau.description]).await;
+    if let Err(_err) = row {
+        return Err(CrenauxError::CreneauNotValid);
+    }
+    let id_creneau : i32 = row.unwrap().get(0).unwrap().get("id");
+    let row = conn.query(
+        "INSERT INTO groupesToCreneaux(id_creneau, id_groupe)
+        VALUES($1, $2)", &[&id_creneau, &id_groupe]).await;
     if let Err(_err) = row {
         return Err(CrenauxError::CreneauNotValid);
     }
     Ok(())
 }
 
+pub async fn create_creneaux_user(conn: &Client , creneau : Crenau, id_account : i32) -> Result<(), CrenauxError>{
+    let row = conn.query("
+    INSERT INTO creneaux (
+        id_week,
+        id_matiere,
+        start_time,
+        end_time,
+        name,
+        description
+      )
+    VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6
+      ) RETURNING id", &[&creneau.id_week, &creneau.id_matiere, &creneau.start_time, &creneau.end_time, &creneau.name, &creneau.description]).await;
+    if let Err(_err) = row {
+        return Err(CrenauxError::CreneauNotValid);
+    }
+    let id_creneau : i32 = row.unwrap().get(0).unwrap().get("id");
+    let row = conn.query(
+        "INSERT INTO accountsToCreneaux(id_creneau, id_account)
+        VALUES($1, $2)", &[&id_creneau, &id_account]).await;
+    if let Err(_err) = row {
+        return Err(CrenauxError::CreneauNotValid);
+    }
+    Ok(())
+}
 
 
 
@@ -111,6 +148,8 @@ pub enum CrenauxError{
     CreneauNotValid,
     #[error("api : mapper error")]
     MapperError(#[from] tokio_pg_mapper::Error),
+    #[error("groupe not valid")]
+    GroupeNotValid,
 }
 
 impl error::ResponseError for CrenauxError {
@@ -119,6 +158,7 @@ impl error::ResponseError for CrenauxError {
             CrenauxError::CreneauNotFound => HttpResponse::NotFound().json("crenaux not found"),
             CrenauxError::CreneauNotValid => HttpResponse::BadRequest().json("crenaux not valid"),
             CrenauxError::MapperError(_) => HttpResponse::InternalServerError().json("mapper error"),
+            CrenauxError::GroupeNotValid => HttpResponse::BadRequest().json("groupe not valid"),
         }
     }
 }

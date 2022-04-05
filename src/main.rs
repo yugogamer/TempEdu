@@ -41,6 +41,8 @@ async fn main() -> Result<(), tokio_postgres::Error>{
                                 .service(controller::crenaux::get_my_edt)
                                 .service(controller::crenaux::get_user_edt)
                                 .service(controller::crenaux::get_groupe_edt)
+                                .service(controller::crenaux::create_creneaux_groupe)
+                                .service(controller::crenaux::create_creneaux_me)
                             )
         )
     })
