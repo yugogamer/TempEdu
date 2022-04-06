@@ -155,7 +155,7 @@ pub enum CrenauxError{
 impl error::ResponseError for CrenauxError {
     fn error_response(&self) -> HttpResponse {
         match self {
-            CrenauxError::CreneauNotFound => HttpResponse::NotFound().json("crenaux not found"),
+            CrenauxError::CreneauNotFound => HttpResponse::BadRequest().json("crenaux not found"),
             CrenauxError::CreneauNotValid => HttpResponse::BadRequest().json("crenaux not valid"),
             CrenauxError::MapperError(_) => HttpResponse::InternalServerError().json("mapper error"),
             CrenauxError::GroupeNotValid => HttpResponse::BadRequest().json("groupe not valid"),

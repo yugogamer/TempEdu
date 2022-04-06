@@ -70,7 +70,6 @@ pub async fn extract(req: &ServiceRequest) -> Result<Vec<String>, actix_web::Err
         let user = auth_user( cookies.value(), &configuration.key)?;
         return Ok(user.permission_list);
     }
-    eprintln!("{:?}", req.cookies());
     Err(AuthError::NoSession.into())
 }
 
