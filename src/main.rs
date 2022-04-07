@@ -45,6 +45,8 @@ async fn main() -> Result<(), tokio_postgres::Error>{
                             )
                             .service(web::scope("/weeks")
                                 .service(controller::weeks::add_weeks)
+                                .service(controller::weeks::get_weeks)
+                                .service(controller::weeks::get_weeks_visible)
                             )
                         )
         )

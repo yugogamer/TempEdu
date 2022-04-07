@@ -2,7 +2,7 @@ use actix_web::{get, web, HttpRequest, Responder, post, HttpResponse};
 use actix_web_grants::proc_macro::has_any_permission;
 use deadpool_postgres::Pool;
 
-use crate::{utils::configuration::Configuration, service::{auth::auth_user, crenaux::{get_creneaux_of_user_with_groupe, get_creneaux_of_groupe}, self}, entity::crenaux::Crenau};
+use crate::{utils::configuration::Configuration, service::{auth::auth_user, crenaux::{get_creneaux_of_user_with_groupe, get_creneaux_of_groupe}, self}, entity::crenaux::{Crenau, InsertCrenaux}};
 
 
 
@@ -43,7 +43,7 @@ pub async fn get_groupe_edt(pool : web::Data<Pool>, id_week: web::Path<i32>, id_
 
 #[post("/g/{id_groupe}")]
 #[has_any_permission("edit_edt")]
-pub async fn create_creneaux_groupe(pool : web::Data<Pool>, id_groupe: web::Path<i32>, crenaux : web::Json<Crenau>) -> Result<impl Responder, actix_web::Error> {
+pub async fn create_creneaux_groupe(pool : web::Data<Pool>, id_groupe: web::Path<i32>, crenaux : web::Json<InsertCrenaux>) -> Result<impl Responder, actix_web::Error> {
     let conn = pool.get().await.unwrap();
     let crenau = crenaux.into_inner();
 
@@ -54,7 +54,7 @@ pub async fn create_creneaux_groupe(pool : web::Data<Pool>, id_groupe: web::Path
 
 #[post("")]
 #[has_any_permission("edit_edt")]
-pub async fn create_creneaux_me(pool : web::Data<Pool>, crenaux : web::Json<Crenau>, configuration : web::Data<Configuration> , req: HttpRequest) -> Result<impl Responder, actix_web::Error> {
+pub async fn create_creneaux_me(pool : web::Data<Pool>, crenaux : web::Json<InsertCrenaux>, configuration : web::Data<Configuration> , req: HttpRequest) -> Result<impl Responder, actix_web::Error> {
     let conn = pool.get().await.unwrap();
     let crenau = crenaux.into_inner();
 

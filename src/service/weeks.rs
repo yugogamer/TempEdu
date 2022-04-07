@@ -2,7 +2,10 @@ use std::ops::Add;
 use actix_web::error;
 use chrono::{DateTime, Local};
 use thiserror::Error;
+use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::Client;
+
+use crate::entity::weeks::Week;
 
 
 #[derive(Debug, Error)]
@@ -18,7 +21,7 @@ pub async fn create_weeks(conn: &Client, iso_string : String) -> Result<(), Week
 
     let rows = conn.query("
     INSERT INTO weeks (week, year, start_time, end_time)
-    VALUES ($1, $2, $3, $4, $5)
+    VALUES ($1, $2, $3, $4)
     ", &[&week, &year, &start_date, &end_date]).await;
 
     match rows {
@@ -35,6 +38,46 @@ pub fn generate_weeks(iso_string : String) -> (i32, i32, i32, DateTime<Local>, D
     let week_end = end_date.format("%V").to_string().parse::<i32>().unwrap();
 
     return (year, week, week_end, date, end_date);
+}
+
+pub async fn get_weeks(conn: &Client) -> Result<Vec<Week>, WeeksError>{ 
+    let rows = conn.query("SELECT * FROM weeks ORDER BY start_time DESC", &[]).await?;
+
+    let mut list: Vec<Week> = Vec::new();
+
+    for row in rows {
+        let week: Week = Week::from_row(row)?;
+        list.push(week);
+    }
+
+    Ok(list)
+}
+
+pub async fn get_weeks_visible(conn: &Client) -> Result<Vec<Week>, WeeksError>{ 
+    let rows = conn.query("SELECT * FROM weeks WHERE visible=true ORDER BY start_time DESC", &[]).await?;
+
+    let mut list: Vec<Week> = Vec::new();
+
+    for row in rows {
+        let week: Week = Week::from_row(row)?;
+        list.push(week);
+    }
+
+    Ok(list)
+}
+
+
+impl error::ResponseError for WeeksError {
+    fn error_response(&self) -> actix_web::HttpResponse {
+        match self {
+            WeeksError::MapperError(_) => {
+                actix_web::HttpResponse::InternalServerError().json(self.to_string())
+            },
+            WeeksError::DbError(_) => {
+                actix_web::HttpResponse::InternalServerError().json(self.to_string())
+            },
+        }
+    }
 }
 
 #[cfg(test)]
@@ -55,18 +98,5 @@ mod test{
         assert_eq!(week_end, 14);
         assert_eq!(date, lundi);
         assert_eq!(end_date, dimanche);
-    }
-}
-
-impl error::ResponseError for WeeksError {
-    fn error_response(&self) -> actix_web::HttpResponse {
-        match self {
-            WeeksError::MapperError(_) => {
-                actix_web::HttpResponse::InternalServerError().json(self.to_string())
-            },
-            WeeksError::DbError(_) => {
-                actix_web::HttpResponse::InternalServerError().json(self.to_string())
-            },
-        }
     }
 }

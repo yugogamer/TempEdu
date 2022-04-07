@@ -3,15 +3,17 @@ use thiserror::Error;
 use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_postgres::Client;
 
-use crate::entity::crenaux::Crenau;
+use crate::entity::crenaux::{Crenau, InsertCrenaux};
 
 
 
 pub async fn get_personal_creneaux_of_user(conn: &Client , id : i32, week : i32) -> Result<Vec<Crenau>, CrenauxError> {
     let rows = conn.query("
-    SELECT A.id, A.id_week, A.id_matiere, A.start_time, A.end_time, A.name.description, A.name FROM crenaux C, accountsToCreneaux AC  
+    SELECT C.id, C.id_week, C.id_matiere, C.start_time, C.end_time, C.description, C.name
+    FROM creneaux C
+    LEFT OUTER JOIN accountsToCreneaux AC ON AC.id_creneau = C.id
     WHERE
-    A.id_week = $1 AND 
+    C.id_week = $1 AND 
     AC.id_user = $2"
     , &[&week ,&id]).await;
     if let Err(_err) = rows {
@@ -29,12 +31,12 @@ pub async fn get_personal_creneaux_of_user(conn: &Client , id : i32, week : i32)
 
 pub async fn get_creneaux_of_groupe(conn: &Client , id : i32, week : i32) -> Result<Vec<Crenau>, CrenauxError> {
     let rows = conn.query("
-    SELECT A.id, A.id_week, A.id_matiere, A.start_time, A.end_time, A.name.description, A.name
-    FROM crenaux C, groupesToCreneaux GC
+    SELECT C.id, C.id_week, C.id_matiere, C.start_time, C.end_time, C.description, C.name
+    FROM creneaux C
+    LEFT OUTER JOIN groupesToCreneaux GC ON GC.id_creneau = C.id
     WHERE
-    A.id_week = $1 AND 
-    GC.id_groupe = $2 AND
-    C.id = GC.id_creneau"
+    C.id_week = $1 AND 
+    GC.id_groupe = $2 AND"
     , &[&week ,&id]).await;
     if let Err(_err) = rows {
         return Err(CrenauxError::CreneauNotFound);
@@ -50,15 +52,23 @@ pub async fn get_creneaux_of_groupe(conn: &Client , id : i32, week : i32) -> Res
 
 pub async fn get_creneaux_of_user_with_groupe(conn: &Client , id : i32, week : i32) -> Result<Vec<Crenau>, CrenauxError> {
     let rows = conn.query("
-    SELECT A.id, A.id_week, A.id_matiere, A.start_time, A.end_time, A.name.description, A.name
-    FROM crenaux C, groupesToCreneaux GC, accountsToCreneaux AC
+    SELECT C.id, C.id_week, C.id_matiere, C.start_time, C.end_time, C.description, C.name
+    FROM creneaux C
+    LEFT OUTER JOIN groupesToCreneaux GC ON GC.id_creneau = C.id
+    LEFT OUTER JOIN accountsToCreneaux AC ON AC.id_creneau = C.id
     WHERE
-    A.id_week = $1 AND 
-    GC.id_groupe IN (
-        SELECT id_groupe FROM groupesToUsers WHERE id_user = $2
-    ) AND 
-    C.id = GC.id_creneau AND 
-    AC.id_creneau = C.id AND AC.id_user = $2"
+    C.id_week = $1 AND(
+    ( 
+        GC.id_groupe IN (
+            SELECT id_groupe 
+            FROM accountsToGroupes 
+            WHERE id_account = $2
+        ) 
+    )
+    OR
+    (
+        AC.id_account = $2
+    ))"
     , &[&week ,&id]).await;
     if let Err(_err) = rows {
         return Err(CrenauxError::CreneauNotFound);
@@ -72,7 +82,7 @@ pub async fn get_creneaux_of_user_with_groupe(conn: &Client , id : i32, week : i
     Ok(crenaux_list)
 }
 
-pub async fn create_creneaux_groupe(conn: &Client , creneau : Crenau, id_groupe : i32) -> Result<(), CrenauxError>{
+pub async fn create_creneaux_groupe(conn: &Client , creneau : InsertCrenaux, id_groupe : i32) -> Result<(), CrenauxError>{
     let row = conn.query("
     INSERT INTO creneaux (
         id_week,
@@ -103,7 +113,7 @@ pub async fn create_creneaux_groupe(conn: &Client , creneau : Crenau, id_groupe 
     Ok(())
 }
 
-pub async fn create_creneaux_user(conn: &Client , creneau : Crenau, id_account : i32) -> Result<(), CrenauxError>{
+pub async fn create_creneaux_user(conn: &Client , creneau : InsertCrenaux, id_account : i32) -> Result<(), CrenauxError>{
     let row = conn.query("
     INSERT INTO creneaux (
         id_week,
