@@ -9,7 +9,7 @@ pub struct Groupe{
     pub protected: bool
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct InsertGroupe{
     pub name: String,
     pub protected: Option<bool>
